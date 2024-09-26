@@ -8,7 +8,7 @@ module control (
     output reg memRead,
     output reg memWrite,
     output reg [3:0] aluOperation,
-    output reg isImmediate
+    output reg isImmediate,
     output reg [2:0] branch
 );
 
