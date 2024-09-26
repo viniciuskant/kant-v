@@ -10,7 +10,7 @@ module alu (
 
 assign zero = (result == 32'b0);
 
-always posedge(clk) begin
+always @(posedge clk) begin
     if (rst) begin
         result <= 32'b0;
     end else begin
