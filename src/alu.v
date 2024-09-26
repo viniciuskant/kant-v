@@ -3,24 +3,31 @@ module alu (
     input wire rst,
     input wire [31:0] operand_1,
     input wire [31:0] operand_2,
-    input wire [2:0] alu_op, //func3
-    input wire [6:0] alu_op2, //func7
-    output wire [31:0] result,
-    output wire zero,
+    input wire [3:0] aluOperation,
+    output reg [31:0] result,
+    output wire zero
 );
 
-/*
-    R-Type      | I-Type                     I-Type
-    func3 | func7 | Descrição                func3 | Descrição  
-    --------------------------               ------------------       
-    000   | 0000000 | ADD                    010   | SLTI  
-    000   | 0100000 | SUB                    011   | SLTIU  
-    001   | 0000000 | SLL                    100   | XORI  
-    010   | 0000000 | SLT                    110   | ORI  
-    011   | 0000000 | SLTU                   111   | ANDI        
-    100   | 0000000 | XOR                   
-    101   | 0000000 | SRL                       
-    101   | 0100000 | SRA                       
-    110   | 0000000 | OR                         
-    111   | 0000000 | AND                      
-*/
+assign zero = (result == 32'b0);
+
+always posedge(clk) begin
+    if (rst) begin
+        result <= 32'b0;
+    end else begin
+        case (aluOperation)
+            4'b0000: result <= operand_1 + operand_2; // ADD or ADDI 
+            4'b0001: result <= operand_1 - operand_2; // SUB 
+            4'b0010: result <= operand_1 << operand_2; // SLL or SLLI 
+            4'b0011: result <= (operand_1 < operand_2) ? 32'b1 : 32'b0; // SLT or SLTI  
+            4'b0100: result <= (operand_1 < operand_2) ? 32'b1 : 32'b0; // SLTU or SLTIU  
+            4'b0101: result <= operand_1 >> operand_2; // SRA 
+            4'b0110: result <= operand_1 >> operand_2; // SRL 
+            4'b0111: result <= operand_1 ^ operand_2; // XOR or XORI 
+            4'b1000: result <= operand_1 | operand_2; // OR or ORI 
+            4'b1001: result <= operand_1 & operand_2; // AND or ANDI 
+            default: result <= 32'b0;
+        endcase
+    end
+end
+
+endmodule
