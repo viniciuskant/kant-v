@@ -1,7 +1,6 @@
 CC      = riscv64-elf-gcc
 OBJDUMP = riscv64-elf-objdump
 OBJCOPY = riscv64-elf-objcopy
-HEXDUMP = hexdump
 
 ARCH    = -march=rv32i
 ABI     = -mabi=ilp32
@@ -10,15 +9,18 @@ LDFLAGS = -Ttext=0
 
 all: codigos.hex
 
-# Compila e linka
 main.elf: main.s
 	$(CC) $(ARCH) $(ABI) $(CFLAGS) $(LDFLAGS) -o $@ $<
 
 codigos.hex: main.elf
-	$(OBJCOPY) -O binary --only-section=.text $< main.bin
-	$(HEXDUMP) -v -e '1/4 "%08x\n"' main.bin > $@
+	$(OBJDUMP) -d $< | \
+	grep '^[[:space:]]*[0-9a-f]\+:' | \
+	awk '{print $$2}' > $@
+
+codigos.lst: main.elf
+	$(OBJDUMP) -d $< > $@
 
 clean:
-	rm -f main.elf main.bin codigos.hex codigos.lst
+	rm -f main.elf codigos.hex codigos.lst imediatos.hex
 
 .PHONY: all clean
