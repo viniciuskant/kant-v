@@ -28,11 +28,11 @@ module gen_imm #(
     always_comb begin
         case (opcode)
             7'b0010011, 7'b0000011, 7'b1100111: out = imm_i;
-            7'b0100011:                         out = imm_s;
-            7'b1100011:                         out = imm_b;
-            7'b0110111, 7'b0010111:             out = imm_u;
-            7'b1101111:                         out = imm_j;
-            default:                            out = '0;
+            7'b0100011: out = imm_s;
+            7'b1100011: out = imm_b;
+            7'b0110111, 7'b0010111: out = imm_u;
+            7'b1101111: out = imm_j;
+            default: out = '0;
         endcase
     end
 
