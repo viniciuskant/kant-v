@@ -33,7 +33,7 @@ module gen_imm_tb;
         int test_num = 0;
         int fail_count = 0;
         
-        codigos_fd = $fopen("../tb/data/codigos.hex", "r");
+        codigos_fd = $fopen("../tb/data/codigo_gen_imm.hex", "r");
         imediatos_fd = $fopen("../tb/data/imediatos.hex", "r");
         
         while (!$feof(codigos_fd) && !$feof(imediatos_fd)) begin
