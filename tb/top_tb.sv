@@ -1,6 +1,6 @@
 `timescale 1ns/1ps
 
-module tb_top;
+module top_tb;
 
     parameter WIDTH = 32;
     parameter WORD_BYTES = 4;
@@ -15,7 +15,7 @@ module tb_top;
         .WIDTH_ADDRESS(WIDTH_ADDRESS),
         .DEPTH_WORDS(DEPTH_WORDS),
         .WIDTH_ADDRESS(WIDTH_ADDRESS)
-    ) dut (
+    ) u_top (
         .clk(clk),
         .rst(rst)
     );
@@ -35,18 +35,18 @@ module tb_top;
 
     initial begin
         $dumpfile("dump.vcd");
-        $dumpvars(0, tb_top);
+        $dumpvars(0, top_tb);
     end
 
     // Monitor
     initial begin
         $display("Tempo\tPC\t\tInstrucao");
-        $monitor("%0t\t%08h\t%08h", $time, dut.pc, dut.instruction);
+        $monitor("%0t\t%08h\t%08h", $time, u_top.pc, u_top.instruction);
     end
 
     // Finalização
     initial begin
-        #2000;
+        #5000;
         $display("\nFim da simulacao");
         $finish;
     end
@@ -57,20 +57,20 @@ module tb_top;
     //     for (int i = 0; i < 9; i++) begin
     //         $display("mem[%0d] = %08h",
     //                 i,
-    //                 dut.instruction_memory.mem[i]);
+    //                 u_top.instruction_memory.mem[i]);
     //     end
     // end
 
 
     initial begin
-        #1995;
+        #4995;
 
         $display("\n=== Conteudo final da memoria de dados ===");
 
         for (int i = 0; i < 128; i++) begin
             $display("mem[%0d] = %08h",
                     i,
-                    dut.data_memory.mem[i]);
+                    u_top.data_memory.mem[i]);
         end
     end
 

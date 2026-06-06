@@ -1,6 +1,6 @@
 `timescale 1ns / 1ps
 
-module register_bank_tb;
+module register_tb;
 
     parameter WIDTH  = 8;
     parameter PERIOD = 10;

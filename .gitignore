@@ -3,6 +3,7 @@
 *.elf
 *.o
 
+out/
 sim/
 *.vcd
 *.vvp

@@ -22,15 +22,13 @@ module memory #(
     assign word_addr = memoryAddress[WORD_SHIFT + $clog2(DEPTH_WORDS)-1 : WORD_SHIFT];
 
     initial begin
-        if (INIT_FILE != "") begin
+        if (INIT_FILE != "")
             $readmemh(INIT_FILE, mem);
-        end
     end
 
-    always_ff @(posedge clk) begin
-        if (memoryWrite) begin
+    always @(posedge clk) begin  //perguntar para o João pq se trocar para always_ff da erro
+        if (memoryWrite)
             mem[word_addr] <= memoryWriteData;
-        end
     end
 
     always_comb begin
