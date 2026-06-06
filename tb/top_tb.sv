@@ -33,45 +33,75 @@ module top_tb;
         rst = 0;
     end
 
+    // Dump VCD
     initial begin
         $dumpfile("dump.vcd");
         $dumpvars(0, top_tb);
     end
 
-    // Monitor
+    // Monitor simples
     initial begin
         $display("Tempo\tPC\t\tInstrucao");
         $monitor("%0t\t%08h\t%08h", $time, u_top.pc, u_top.instruction);
     end
 
-    // Finalização
-    initial begin
-        #5000;
-        $display("\nFim da simulacao");
-        $finish;
-    end
+    // =============================================
+    // Autoverificação e controle da simulação
+    // =============================================
+initial begin
+    // Aguarda o reset ser desativado
+    wait(rst == 0);
+    #1;
 
-    // initial begin
-    //     #1;
-    //     $display("\n=== Conteudo da memoria de instrucoes ===");
-    //     for (int i = 0; i < 9; i++) begin
-    //         $display("mem[%0d] = %08h",
-    //                 i,
-    //                 u_top.instruction_memory.mem[i]);
-    //     end
-    // end
-
-
-    initial begin
-        #4995;
-
-        $display("\n=== Conteudo final da memoria de dados ===");
-
-        for (int i = 0; i < 128; i++) begin
-            $display("mem[%0d] = %08h",
-                    i,
-                    u_top.data_memory.mem[i]);
+    fork
+        // ERRO: x5 = -1
+        begin
+            wait(u_top.cpu_inst.u_register_bank.x[5] == 32'hFFFFFFFF);
+            #50;
+            $display("\n=== ERRO DETECTADO (x5 = -1) ===");
+            $display("x5 = %08h", u_top.cpu_inst.u_register_bank.x[5]);
+            $finish;
         end
-    end
 
+        // SUCESSO: x5 = 5
+        begin
+            wait(u_top.cpu_inst.u_register_bank.x[5] == 32'd5);
+            #50;
+            $display("\n=== TESTE PASSOU (x5 = 5) ===");
+            $display("x5 = %08h", u_top.cpu_inst.u_register_bank.x[5]);
+
+            $display("=== Conteudo final da memoria de dados ===");
+            for (int i = 0; i < 128; i++) begin
+                $display("mem[%0d] = %08h", i, u_top.data_memory.mem[i]);
+            end
+
+            $finish;
+        end
+
+        // Timeout
+        begin
+            #9000;
+
+            $display("\n=== TEMPO LIMITE ATINGIDO ===");
+            $display("x5 = %08h", u_top.cpu_inst.u_register_bank.x[5]);
+
+            if (u_top.cpu_inst.u_register_bank.x[5] == 32'd1) begin
+                $display("*** TESTE NAO TERMINOU (tempo insuficiente) ***");
+            end
+            else if (u_top.cpu_inst.u_register_bank.x[5] == 32'd5) begin
+                $display("*** TESTE PASSOU ***");
+            end
+            else if (u_top.cpu_inst.u_register_bank.x[5] == 32'hFFFFFFFF) begin
+                $display("*** TESTE FALHOU (erro) ***");
+            end
+            else begin
+                $display("*** ESTADO INESPERADO DE x5 ***");
+            end
+
+            $finish;
+        end
+    join_any
+
+    disable fork;
+end
 endmodule
