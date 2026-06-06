@@ -11,7 +11,7 @@ vcs \
 -kdb \
 -lca \
 -debug_access+all+reverse \
--cm line+tgl+branch+cond \
+-cm line+tgl+branch+cond+fsm \
 $TB/top_tb.sv \
 $RTL/register_bank.sv \
 $RTL/register.sv \
@@ -30,7 +30,7 @@ echo "Simulando..."
 +FSDB_ON \
 +fsdbfile+inter.fsdb \
 -l new.log \
--cm line+cond+tgl+branch+assert
+-cm line+cond+tgl+branch+assert+fsm
 
 echo "Abrindo Verdi..."
 
