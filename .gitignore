@@ -3,6 +3,8 @@
 *.elf
 *.o
 
+work/
+runs/
 out/
 sim/
 *.vcd
