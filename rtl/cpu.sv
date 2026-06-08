@@ -1,30 +1,33 @@
 module cpu #(
     parameter WIDTH = 32,
-    parameter WIDTH_ADDRESS = 8
+    parameter WIDTH_ADDRESS = 8,
+    parameter ADDR_PC_INIT = 32'h8000_0000
 )(
     input clk,
     input rst,
-
-    output logic [WIDTH-1:0] pc, 
-    output logic readInstruction, //TODO
-    input [WIDTH-1:0] instruction,
     
     output logic memoryWrite,
     output logic memoryRead,
     output logic [WIDTH-1:0] memoryWriteData,
     input  [WIDTH-1:0] memoryReadData,
     output logic [WIDTH_ADDRESS-1:0] memoryAddress,
-
+    output logic [31:0] debug_gp,
+    
     output logic cpu_rdy
 );
 
-    localparam ADDR_PC_INITIAL = 32'b0;
+    logic [WIDTH-1:0] instruction, dataRead_data;
+    assign instruction = memoryReadData;
+    assign dataRead_data = memoryReadData;
+
+
     logic signed [WIDTH-1:0] imm;
     logic regWrite;
+    logic instruction_en;
+
 
     // FETCH
     logic [WIDTH-1:0] reg_instruction;
-    logic instruction_en;
     register #(.WIDTH(WIDTH)) u_reg_instruction (
         .clk(clk),
         .rst(rst),
@@ -73,15 +76,6 @@ module cpu #(
     logic [WIDTH-1:0] reg_data_out_rs2;
 
 
-    // Para teste o enderecamento ta reduzido
-    assign memoryAddress = reg_result_alu[WIDTH_ADDRESS-1:0];
-    always_comb begin
-        if (memoryWrite) 
-            memoryWriteData = reg_data_out_rs2;
-        else
-            memoryWriteData = '0;
-    end
-
 
     // DECODER
     logic [1:0] mux_register_bank;
@@ -92,11 +86,11 @@ module cpu #(
             USE_JUMP: regData = RA;
             USE_MEMORY: begin
                 case (func3)
-                    3'b000: regData = {{24{memoryReadData[7]}},  memoryReadData[7:0]}; // LB
-                    3'b001: regData = {{16{memoryReadData[15]}}, memoryReadData[15:0]}; // LH
-                    3'b010: regData = memoryReadData;  // LW
-                    3'b100: regData = {24'b0, memoryReadData[7:0]};  // LBU
-                    3'b101: regData = {16'b0, memoryReadData[15:0]};  // LHU
+                    3'b000: regData = {{24{dataRead_data[7]}},  dataRead_data[7:0]}; // LB
+                    3'b001: regData = {{16{dataRead_data[15]}}, dataRead_data[15:0]}; // LH
+                    3'b010: regData = dataRead_data;  // LW
+                    3'b100: regData = {24'b0, dataRead_data[7:0]};  // LBU
+                    3'b101: regData = {16'b0, dataRead_data[15:0]};  // LHU
                     default: regData = '0;
                 endcase
             end
@@ -113,7 +107,8 @@ module cpu #(
         .rs1(rs1),
         .rs2(rs2),
         .rd(rd),
-        .regWrite(regWrite) 
+        .regWrite(regWrite),
+        .debug_gp(debug_gp)
     );
 
     logic [WIDTH-1:0] reg_data_out_rs1;
@@ -204,49 +199,61 @@ module cpu #(
         PC = PC_PLUS4;
         RA = '0;
 
-        if (rst) begin
-            PC = ADDR_PC_INITIAL;
-        end else begin
-            case (mux_pc)
-                FLOW_NORMAL: begin
-                    PC = PC_PLUS4;
-                end
+        case (mux_pc)
+            FLOW_NORMAL: begin
+                PC = PC_PLUS4;
+            end
 
-                FLOW_JAL: begin
+            FLOW_JAL: begin
+                PC = reg_PC + imm;
+                RA = PC_PLUS4;
+            end
+
+            FLOW_JALR: begin
+                PC = (reg_data_out_rs1 + imm) & ~1;
+                RA = PC_PLUS4;
+            end
+
+            FLOW_CONDITIONAL: begin
+                if (takeBranch)
                     PC = reg_PC + imm;
-                    RA = PC_PLUS4;
-                end
-
-                FLOW_JALR: begin
-                    PC = (reg_data_out_rs1 + imm) & ~1;
-                    RA = PC_PLUS4;
-                end
-
-                FLOW_CONDITIONAL: begin
-                    if (takeBranch)
-                        PC = reg_PC + imm;
-                    else
-                        PC = PC_PLUS4;
-                end
-
-                default: begin
+                else
                     PC = PC_PLUS4;
-                end
-            endcase
-        end
+            end
+
+            default: begin
+                PC = PC_PLUS4;
+            end
+        endcase
     end
 
     logic out_en;
-    register #(.WIDTH(WIDTH)) u_reg_PC (
+    register #(.WIDTH(WIDTH), .PRE_SET(ADDR_PC_INIT)) u_reg_PC (
         .clk(clk),
         .rst(rst),
         .in(PC),
         .out(reg_PC),
-        .wr_en(out_en) 
+        .wr_en(out_en | rst) 
     );
 
     assign pc = reg_PC;
 
+    logic dataWrite_en, dataRead_en;
+    logic [WIDTH-1:0] dataWrite_data;
+    always_comb begin
+        if (dataWrite_en) 
+            dataWrite_data = reg_data_out_rs2;
+        else
+            dataWrite_data = '0;
+    end
+
+    assign memoryWrite = dataWrite_en;
+    assign memoryRead = dataRead_en | instruction_en;
+    
+    assign dataAddress = reg_result_alu[WIDTH_ADDRESS-1:0];
+    assign memoryAddress = ((dataWrite_en | dataRead_en) == 1'b1) ? dataAddress : reg_PC;
+
+    assign memoryWriteData = dataWrite_data;
 
     control u_control (
         .clk(clk), //ok
@@ -267,8 +274,8 @@ module cpu #(
         .mux_alu_rs2(mux_alu_rs2),
         .mux_register_bank(mux_register_bank),
 
-        .memoryRead(memoryRead),
-        .memoryWrite(memoryWrite),
+        .memoryRead(dataRead_en),
+        .memoryWrite(dataWrite_en),
 
         .mux_pc(mux_pc),
         .cpu_rdy(cpu_rdy)

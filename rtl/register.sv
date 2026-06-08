@@ -1,5 +1,6 @@
 module register #(
-	parameter WIDTH = 32
+	parameter WIDTH = 32,
+    parameter PRE_SET = 32'h0000_0000
 )(
 	input clk,
 	input rst,
@@ -13,7 +14,7 @@ module register #(
 
 	always_ff @(posedge clk or posedge rst) begin
 		if (rst) begin
-			regs <= '0;
+			regs <= PRE_SET;
 		end else begin 
 			if (wr_en) regs <= in;
 		end

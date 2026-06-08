@@ -9,3 +9,5 @@ out/
 sim/
 *.vcd
 *.vvp
+
+.vscode/
